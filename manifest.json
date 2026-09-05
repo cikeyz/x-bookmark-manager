@@ -1,6 +1,6 @@
 {
   "manifest_version": 3,
-  "name": "X Bookmarks Manager (CK Fork)",
+  "name": "X Bookmarks Manager",
   "version": "2.0.0",
   "description": "Replaces the X bookmarks and history pages with a fast masonry view, dark mode, filters, and JSON export.",
   "icons": {

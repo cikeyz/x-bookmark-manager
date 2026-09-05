@@ -2,7 +2,7 @@
 
 <img src="assets/banner.png" alt="X Bookmarks Manager" width="100%" />
 
-# X Bookmarks Manager (CK Fork)
+# X Bookmarks Manager
 
 **A free browser extension that turns your X (Twitter) bookmarks into a fast masonry view.**
 
