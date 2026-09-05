@@ -155,3 +155,48 @@ button.secondary:hover {
   color: #536471;
   text-align: center;
 }
+
+/* Dark theme - matches X lights-out */
+body[data-theme="dark"] {
+  color-scheme: dark;
+  background: #000;
+  color: #e7e9ea;
+}
+
+body[data-theme="dark"] .sub,
+body[data-theme="dark"] .hint,
+body[data-theme="dark"] .unit,
+body[data-theme="dark"] .footer {
+  color: #71767b;
+}
+
+body[data-theme="dark"] .card {
+  background: #000;
+  border: 1px solid #2f3336;
+  box-shadow: none;
+}
+
+body[data-theme="dark"] input[type="number"] {
+  background: #202327;
+  border-color: #2f3336;
+  color: #e7e9ea;
+}
+
+body[data-theme="dark"] button.secondary {
+  background: #202327;
+  color: #e7e9ea;
+}
+
+body[data-theme="dark"] button.secondary:hover {
+  background: #2f3336;
+}
+
+body[data-theme="dark"] .status {
+  background: #202327;
+  color: #e7e9ea;
+}
+
+body[data-theme="dark"] .status.error {
+  background: #3a1114;
+  color: #f87171;
+}

@@ -1,5 +1,13 @@
 {
   "name": "x-bookmark-manager",
+  "version": "2.0.0",
+  "description": "Free browser extension that turns X bookmarks into a fast masonry view. Maintained fork of sarisen/x-bookmark-manager.",
+  "author": "Carl Kristian Ortiz",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/cikeyz/x-bookmark-manager.git"
+  },
   "private": true,
   "scripts": {
     "test": "node --test",

@@ -1,21 +1,55 @@
-/* global window, chrome */
+/* global window, chrome, indexedDB */
 (function () {
   "use strict";
 
   const STORAGE_KEY = "bookmarkArchiveV1";
   const SCHEMA_VERSION = 1;
+  const DB_NAME = "xbm-archive-db";
+  const DB_STORE = "xbm-archive-store";
+  const DB_KEY = "archive";
 
-  function storageGet(key) {
+  let dbPromise = null;
+  let backend = null;
+
+  function openDb() {
+    if (dbPromise) return dbPromise;
+    dbPromise = new Promise((resolve, reject) => {
+      try {
+        const req = indexedDB.open(DB_NAME, 1);
+        req.onupgradeneeded = () => {
+          req.result.createObjectStore(DB_STORE);
+        };
+        req.onsuccess = () => resolve(req.result);
+        req.onerror = () => reject(req.error || new Error("IndexedDB open failed"));
+      } catch (err) {
+        reject(err);
+      }
+    });
+    return dbPromise;
+  }
+
+  async function detectBackend() {
+    if (backend) return backend;
+    try {
+      await openDb();
+      backend = "idb";
+    } catch (_) {
+      backend = "local";
+    }
+    return backend;
+  }
+
+  function localGet() {
     return new Promise((resolve, reject) => {
-      chrome.storage.local.get(key, (result) => {
+      chrome.storage.local.get(STORAGE_KEY, (result) => {
         const error = chrome.runtime.lastError;
         if (error) reject(new Error(error.message));
-        else resolve(result[key]);
+        else resolve(result[STORAGE_KEY]);
       });
     });
   }
 
-  function storageSet(value) {
+  function localSet(value) {
     return new Promise((resolve, reject) => {
       chrome.storage.local.set({ [STORAGE_KEY]: value }, () => {
         const error = chrome.runtime.lastError;
@@ -23,6 +57,53 @@
         else resolve();
       });
     });
+  }
+
+  function localRemove() {
+    return new Promise((resolve) => {
+      try {
+        chrome.storage.local.remove(STORAGE_KEY, () => resolve());
+      } catch (_) {
+        resolve();
+      }
+    });
+  }
+
+  function idbRead() {
+    return openDb().then(
+      (db) =>
+        new Promise((resolve, reject) => {
+          try {
+            const tx = db.transaction(DB_STORE, "readonly");
+            const req = tx.objectStore(DB_STORE).get(DB_KEY);
+            req.onsuccess = () => resolve(req.result || null);
+            req.onerror = () => reject(req.error || new Error("IndexedDB read failed"));
+          } catch (err) {
+            reject(err);
+          }
+        })
+    );
+  }
+
+  function idbWrite(value) {
+    return openDb().then(
+      (db) =>
+        new Promise((resolve, reject) => {
+          try {
+            const tx = db.transaction(DB_STORE, "readwrite");
+            tx.objectStore(DB_STORE).put(value, DB_KEY);
+            tx.oncomplete = () => resolve();
+            tx.onerror = () => reject(tx.error || new Error("IndexedDB write failed"));
+          } catch (err) {
+            reject(err);
+          }
+        })
+    );
+  }
+
+  function validArchive(archive) {
+    if (!archive || archive.schemaVersion !== SCHEMA_VERSION) return null;
+    return Array.isArray(archive.bookmarks) ? archive.bookmarks : [];
   }
 
   function normalizeBookmark(bookmark, seenAt) {
@@ -36,19 +117,38 @@
   }
 
   async function load() {
-    const archive = await storageGet(STORAGE_KEY);
-    if (!archive || archive.schemaVersion !== SCHEMA_VERSION) return [];
-    return Array.isArray(archive.bookmarks) ? archive.bookmarks : [];
+    const useIdb = (await detectBackend()) === "idb";
+    const found = validArchive(useIdb ? await idbRead() : await localGet());
+    if (found) return found;
+    if (useIdb) {
+      const legacy = validArchive(await localGet().catch(() => null));
+      if (legacy) {
+        await idbWrite({
+          schemaVersion: SCHEMA_VERSION,
+          updatedAt: new Date().toISOString(),
+          count: legacy.length,
+          bookmarks: legacy,
+        }).catch(() => {});
+        localRemove();
+        return legacy;
+      }
+    }
+    return [];
   }
 
   async function save(bookmarks) {
-    const now = new Date().toISOString();
-    await storageSet({
+    const payload = {
       schemaVersion: SCHEMA_VERSION,
-      updatedAt: now,
+      updatedAt: new Date().toISOString(),
       count: bookmarks.length,
       bookmarks,
-    });
+    };
+    if ((await detectBackend()) === "idb") {
+      await idbWrite(payload);
+      localRemove();
+    } else {
+      await localSet(payload);
+    }
   }
 
   function merge(existing, incoming, seenAt = new Date().toISOString()) {

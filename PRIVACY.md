@@ -1,38 +1,39 @@
-# Gizlilik Politikası — X Bookmarks Manager
+# Privacy Policy — X Bookmarks Manager (CK Fork)
 
-**Son güncelleme:** 2 Haziran 2026
+**Last updated:** 6 September 2026
 
-## Özet
+## Summary
 
-X Bookmarks Manager, yalnızca tarayıcınızda çalışan ücretsiz bir Chrome eklentisidir. Verilerinizi sunucularımıza göndermez, üçüncü taraflarla paylaşmaz ve reklam amaçlı izleme yapmaz.
+X Bookmarks Manager is a free browser extension that runs entirely in your browser. It sends none of your data to our servers, shares nothing with third parties, and performs no advertising tracking.
 
-## Toplanan Veriler
+## Data collected
 
-Eklenti aşağıdaki verileri **yalnızca yerel cihazınızda** işler:
+The extension processes the following data **only on your local device**:
 
-- X (Twitter) yer işaretleriniz (sayfa yüklenirken X'in kendi API'sinden okunur)
-- Yer işareti arşiviniz (`chrome.storage.local` içinde saklanır)
+- Your X (Twitter) bookmarks (read from X's own API while the bookmarks page loads)
+- Your bookmark archive (stored in the browser's IndexedDB; migrated automatically from the legacy `chrome.storage.local` archive)
+- Your settings (fetch delay, theme preference, custom-view toggle, stored in `chrome.storage.sync`)
 
-## Veri Aktarımı
+## Data transfer
 
-- Hiçbir veri harici bir sunucuya gönderilmez
-- Analitik, telemetri veya reklam ağı kullanılmaz
-- JSON dışa aktarma işlemi tamamen yerel olarak gerçekleşir; dosya doğrudan bilgisayarınıza indirilir
+- No data is sent to any external server
+- No analytics, telemetry, or advertising network is used
+- JSON export happens fully locally; the file downloads directly to your computer
 
-## İzinler
+## Permissions
 
-| İzin | Amaç |
+| Permission | Purpose |
 |------|------|
-| `storage` | Ayarları ve yerel yer işareti arşivini saklamak |
-| `unlimitedStorage` | Büyük yer işareti arşivlerinin tarayıcı kotasına takılmasını önlemek |
-| `x.com` / `twitter.com` erişimi | Yer işaretleri sayfasında özel arayüzü göstermek ve X API yanıtlarını okumak |
+| `storage` | Store settings and the legacy bookmark archive |
+| `unlimitedStorage` | Keep large bookmark archives past the browser quota |
+| `x.com` / `twitter.com` access | Show the custom interface on the bookmarks pages and read X API responses |
 
-## Veri Saklama ve Silme
+## Data storage and deletion
 
-- Çekilen yer işaretleri sonraki oturumlarda kullanılmak üzere cihazınızda saklanır
-- Eklentiyi kaldırdığınızda veya tarayıcı verilerini temizlediğinizde notlar silinir
-- Yer işareti verileri eklenti tarafından kalıcı olarak saklanmaz; her oturumda X'ten yeniden okunur
+- Fetched bookmarks are kept on your device for use across sessions
+- Removing the extension or clearing browser data deletes the archive
+- Bookmark data is never stored by the extension author; each session re-reads from X
 
-## İletişim
+## Contact
 
-Sorularınız için GitHub deposundaki Issues bölümünü kullanabilirsiniz.
+Use the Issues section of the GitHub repository for questions.

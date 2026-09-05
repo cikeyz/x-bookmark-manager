@@ -209,7 +209,7 @@
     return new Promise((resolve, reject) => {
       const timer = setTimeout(() => {
         if (pendingRemove?.tweetId === tweetId) pendingRemove = null;
-        reject(new Error("X yanıt vermedi"));
+        reject(new Error("X did not respond"));
       }, timeoutMs);
 
       pendingRemove = {
@@ -248,12 +248,12 @@
     }
 
     if (!tweetEl) {
-      throw new Error("Tweet X listesinde bulunamadı");
+      throw new Error("Tweet not found in the X list");
     }
 
     const btn = findBookmarkButton(tweetEl);
     if (!btn) {
-      throw new Error("Yer işareti butonu bulunamadı");
+      throw new Error("Bookmark button not found");
     }
 
     tweetEl.scrollIntoView({ block: "center", behavior: "auto" });
@@ -265,7 +265,7 @@
     await confirmPromise.catch(async () => {
       await sleep(800);
       if (!findTweetById(tweetId)) return;
-      throw new Error("Kaldırılamadı — tekrar deneyin");
+      throw new Error("Could not remove - try again");
     });
   }
 
@@ -359,7 +359,7 @@
     );
 
     if (!requestUrl) {
-      dispatch("fetch-error", { message: "API URL bulunamadı" });
+      dispatch("fetch-error", { message: "API URL not found" });
       return;
     }
 
@@ -387,7 +387,7 @@
   document.addEventListener("x-bookmarks-remove", async (e) => {
     const { tweetId } = e.detail || {};
     if (!tweetId) {
-      dispatch("remove-error", { tweetId, message: "Tweet ID yok" });
+      dispatch("remove-error", { tweetId, message: "No tweet ID" });
       return;
     }
 
@@ -397,7 +397,7 @@
     } catch (err) {
       dispatch("remove-error", {
         tweetId,
-        message: err.message || "Kaldırılamadı",
+        message: err.message || "Could not remove",
       });
     }
   });

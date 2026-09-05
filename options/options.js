@@ -25,9 +25,22 @@ function clamp(value) {
 }
 
 function load() {
-  chrome.storage.sync.get({ [STORAGE_KEY]: DEFAULT_DELAY }, (result) => {
-    input.value = clamp(result[STORAGE_KEY]);
-  });
+  chrome.storage.sync.get(
+    { [STORAGE_KEY]: DEFAULT_DELAY, xbmTheme: "auto" },
+    (result) => {
+      input.value = clamp(result[STORAGE_KEY]);
+      applyTheme(result.xbmTheme);
+    }
+  );
+}
+
+function applyTheme(pref) {
+  const dark =
+    pref === "dark" ||
+    (pref !== "light" &&
+      window.matchMedia &&
+      window.matchMedia("(prefers-color-scheme: dark)").matches);
+  document.body.dataset.theme = dark ? "dark" : "light";
 }
 
 function save(value) {
@@ -35,10 +48,10 @@ function save(value) {
   input.value = seconds;
   chrome.storage.sync.set({ [STORAGE_KEY]: seconds }, () => {
     if (chrome.runtime.lastError) {
-      showStatus("Kaydedilemedi: " + chrome.runtime.lastError.message, true);
+      showStatus("Could not save: " + chrome.runtime.lastError.message, true);
       return;
     }
-    showStatus(`Kaydedildi — ${seconds} saniye bekleme`);
+    showStatus(`Saved - ${seconds} second wait`);
   });
 }
 

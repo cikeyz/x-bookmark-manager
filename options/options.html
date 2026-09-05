@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="tr">
+<html lang="en">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>X Bookmarks Manager — Ayarlar</title>
+    <title>X Bookmarks Manager - Settings</title>
     <link rel="stylesheet" href="options.css" />
   </head>
   <body>
@@ -17,17 +17,17 @@
         </svg>
         <div>
           <h1>X Bookmarks Manager</h1>
-          <p class="sub">Eklenti ayarları</p>
+          <p class="sub">Extension settings</p>
         </div>
       </header>
 
       <section class="card">
-        <h2>Yükleme</h2>
+        <h2>Loading</h2>
         <label class="field" for="fetch-delay">
-          <span class="label">Sayfalar arası bekleme süresi (saniye)</span>
+          <span class="label">Wait time between pages (seconds)</span>
           <span class="hint">
-            "Tümünü Yükle" her sayfa isteği arasında bu kadar bekler. Ban
-            riskini azaltmak için en az 2–3 saniye önerilir.
+            "Load All" waits this long between page requests. At least 2-3
+            seconds is recommended to reduce ban risk.
           </span>
           <div class="input-row">
             <input
@@ -38,21 +38,21 @@
               step="1"
               value="3"
             />
-            <span class="unit">sn</span>
+            <span class="unit">s</span>
           </div>
         </label>
 
         <p class="status" id="status" hidden></p>
 
         <div class="actions">
-          <button type="button" id="save-btn">Kaydet</button>
-          <button type="button" id="reset-btn" class="secondary">Varsayılana dön (3 sn)</button>
+          <button type="button" id="save-btn">Save</button>
+          <button type="button" id="reset-btn" class="secondary">Reset to default (3 s)</button>
         </div>
       </section>
 
       <footer class="footer">
-        Değişiklikler kaydedildikten sonra açık yer işaretleri sekmesine otomatik
-        uygulanır.
+        Changes are applied automatically to open bookmark tabs after
+        saving.
       </footer>
     </main>
     <script src="options.js"></script>
