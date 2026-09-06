@@ -133,30 +133,33 @@
     if (root) root.hidden = enabled;
   }
 
-  function openOptionsPage() {
-    try {
-      if (chrome.runtime?.openOptionsPage) {
-        chrome.runtime.openOptionsPage();
+  function openSettingsModal() {
+    const modal = document.getElementById("xbm-settings-modal");
+    const input = document.getElementById("xbm-settings-delay");
+    if (!modal || !input) return;
+    input.value = getDelaySeconds();
+    modal.hidden = false;
+  }
+
+  function closeSettingsModal() {
+    const modal = document.getElementById("xbm-settings-modal");
+    if (modal) modal.hidden = true;
+  }
+
+  function saveDelayFromModal(value) {
+    const seconds = clampDelaySeconds(value);
+    const input = document.getElementById("xbm-settings-delay");
+    if (input) input.value = seconds;
+    chrome.storage.sync.set({ [SETTINGS_KEY]: seconds }, () => {
+      if (chrome.runtime.lastError) {
+        showToast("Could not save settings");
         return;
       }
-    } catch (_) {}
-    let url = null;
-    try {
-      url = chrome.runtime.getURL("options/options.html");
-    } catch (_) {}
-    if (!url) {
-      showToast("Could not open settings");
-      return;
-    }
-    // Anchor click inside the gesture handler keeps user activation;
-    // window.open from a content script gets silently popup-blocked.
-    const a = document.createElement("a");
-    a.href = url;
-    a.target = "_blank";
-    a.rel = "noopener";
-    (document.body || document.documentElement).appendChild(a);
-    a.click();
-    a.remove();
+      fetchDelayMs = seconds * 1000;
+      updateLoadingUI();
+      showToast(`Saved - ${seconds} second wait`);
+      closeSettingsModal();
+    });
   }
 
   function injectScript() {
@@ -632,6 +635,29 @@
           ${renderMainContent()}
         </main>
 
+        <div class="xbm-modal-overlay" id="xbm-settings-modal" hidden>
+          <div class="xbm-modal" role="dialog" aria-label="Settings">
+            <div class="xbm-modal-head">
+              <span class="xbm-modal-title">Settings</span>
+              <button type="button" class="xbm-icon-btn xbm-modal-close" id="xbm-settings-close" title="Close" aria-label="Close">
+                ${ICON_X}
+              </button>
+            </div>
+            <label class="xbm-modal-field" for="xbm-settings-delay">
+              <span class="xbm-modal-label">Wait time between pages (seconds)</span>
+              <span class="xbm-modal-hint">"Load all" waits this long between page requests. At least 2-3 seconds is recommended to reduce ban risk.</span>
+              <span class="xbm-modal-row">
+                <input type="number" id="xbm-settings-delay" min="1" max="60" step="1" value="3" />
+                <span class="xbm-modal-unit">s</span>
+              </span>
+            </label>
+            <div class="xbm-modal-actions">
+              <button type="button" class="xbm-modal-save" id="xbm-settings-save">Save</button>
+              <button type="button" class="xbm-modal-reset" id="xbm-settings-reset">Reset to default (3 s)</button>
+            </div>
+          </div>
+        </div>
+
         <div class="xbm-toast" id="xbm-toast" hidden></div>
       </div>`;
   }
@@ -837,8 +863,27 @@
     document.getElementById("xbm-theme-btn")?.addEventListener("click", () => {
       setTheme(getEffectiveTheme() === "dark" ? "light" : "dark");
     });
-    document.getElementById("xbm-settings-btn")?.addEventListener("click", () => {
-      openOptionsPage();
+    document.getElementById("xbm-settings-btn")?.addEventListener("click", (e) => {
+      e.stopPropagation();
+      closeMenus();
+      openSettingsModal();
+    });
+    document.getElementById("xbm-settings-close")?.addEventListener("click", () => {
+      closeSettingsModal();
+    });
+    document.getElementById("xbm-settings-modal")?.addEventListener("click", (e) => {
+      if (e.target?.id === "xbm-settings-modal") closeSettingsModal();
+    });
+    document.getElementById("xbm-settings-save")?.addEventListener("click", () => {
+      saveDelayFromModal(document.getElementById("xbm-settings-delay")?.value);
+    });
+    document.getElementById("xbm-settings-reset")?.addEventListener("click", () => {
+      saveDelayFromModal(DEFAULT_DELAY_SECONDS);
+    });
+    document.getElementById("xbm-settings-delay")?.addEventListener("keydown", (e) => {
+      if (e.key === "Enter") {
+        saveDelayFromModal(e.target.value);
+      }
     });
     document.getElementById("xbm-export-btn")?.addEventListener("click", (e) => {
       e.stopPropagation();
@@ -884,7 +929,10 @@
       }
     });
     document.addEventListener("keydown", (e) => {
-      if (e.key === "Escape") closeMenus();
+      if (e.key === "Escape") {
+        closeMenus();
+        closeSettingsModal();
+      }
     });
   }
 

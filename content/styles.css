@@ -741,6 +741,164 @@ body.xbm-active [data-testid="primaryColumn"] {
   display: none;
 }
 
+/* Settings modal */
+.xbm-modal-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 400;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  background: rgba(0, 0, 0, 0.4);
+}
+
+.xbm-modal-overlay[hidden] {
+  display: none;
+}
+
+.xbm-modal {
+  width: 100%;
+  max-width: 420px;
+  padding: 20px 20px 16px;
+  background: #fff;
+  color: #0f1419;
+  border-radius: 16px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.25);
+}
+
+.xbm-modal-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+
+.xbm-modal-title {
+  font-size: 17px;
+  font-weight: 700;
+}
+
+.xbm-modal-close {
+  width: 34px;
+  height: 34px;
+}
+
+.xbm-modal-close svg {
+  width: 18px;
+  height: 18px;
+}
+
+.xbm-modal-field {
+  display: block;
+}
+
+.xbm-modal-label {
+  display: block;
+  font-size: 15px;
+  font-weight: 600;
+  margin-bottom: 6px;
+}
+
+.xbm-modal-hint {
+  display: block;
+  font-size: 13px;
+  line-height: 1.45;
+  color: #536471;
+  margin-bottom: 12px;
+}
+
+.xbm-modal-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.xbm-modal-row input {
+  width: 100px;
+  padding: 10px 12px;
+  border: 1px solid #cfd9de;
+  border-radius: 10px;
+  font-size: 16px;
+  font-weight: 600;
+  color: inherit;
+  background: transparent;
+  outline: none;
+}
+
+.xbm-modal-row input:focus {
+  border-color: #1d9bf0;
+  box-shadow: 0 0 0 2px rgba(29, 155, 240, 0.25);
+}
+
+.xbm-modal-unit {
+  font-size: 15px;
+  color: #536471;
+  font-weight: 600;
+}
+
+.xbm-modal-actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 18px;
+  flex-wrap: wrap;
+}
+
+.xbm-modal-save {
+  padding: 10px 20px;
+  border: none;
+  border-radius: 999px;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  background: #1d9bf0;
+  color: #fff;
+}
+
+.xbm-modal-save:hover {
+  background: #1a8cd8;
+}
+
+.xbm-modal-reset {
+  padding: 10px 20px;
+  border: none;
+  border-radius: 999px;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  background: #eff3f4;
+  color: #0f1419;
+}
+
+.xbm-modal-reset:hover {
+  background: #e1e8ed;
+}
+
+.xbm-app[data-theme="dark"] .xbm-modal {
+  background: #000;
+  color: #e7e9ea;
+  border: 1px solid #2f3336;
+}
+
+.xbm-app[data-theme="dark"] .xbm-modal-hint,
+.xbm-app[data-theme="dark"] .xbm-modal-unit {
+  color: #71767b;
+}
+
+.xbm-app[data-theme="dark"] .xbm-modal-row input {
+  border-color: #2f3336;
+  background: #202327;
+}
+
+.xbm-app[data-theme="dark"] .xbm-modal-reset {
+  background: #202327;
+  color: #e7e9ea;
+}
+
+.xbm-app[data-theme="dark"] .xbm-modal-reset:hover {
+  background: #2f3336;
+}
+
 /* Dark theme - matches X lights-out */
 #x-bookmarks-manager-root {
   color-scheme: light;
