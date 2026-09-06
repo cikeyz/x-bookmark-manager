@@ -1111,7 +1111,6 @@ body.xbm-active [data-testid="primaryColumn"] {
 }
 
 .xbm-sort-btn {
-  margin-left: auto;
   align-self: center;
   display: inline-flex;
   align-items: center;
