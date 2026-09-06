@@ -5,6 +5,7 @@
   const SETTINGS_KEY = "fetchDelaySeconds";
   const THEME_KEY = "xbmTheme";
   const ENABLED_KEY = "xbmEnabled";
+  const SORT_KEY = "xbmSort";
   const DEFAULT_DELAY_SECONDS = 3;
   const MIN_DELAY_SECONDS = 1;
   const MAX_DELAY_SECONDS = 60;
@@ -21,6 +22,7 @@
   let viewFrom = "";
   let viewTo = "";
   let sortDir = "desc";
+  let sortField = "posted";
   const PAGE_SIZE = 100;
   let visibleLimit = PAGE_SIZE;
   let uiRoot = null;
@@ -51,7 +53,7 @@
   function loadSettings() {
     return new Promise((resolve) => {
       chrome.storage.sync.get(
-        { [SETTINGS_KEY]: DEFAULT_DELAY_SECONDS, [THEME_KEY]: "auto", [ENABLED_KEY]: true },
+        { [SETTINGS_KEY]: DEFAULT_DELAY_SECONDS, [THEME_KEY]: "auto", [ENABLED_KEY]: true, [SORT_KEY]: null },
         (result) => {
           fetchDelayMs =
             clampDelaySeconds(result[SETTINGS_KEY]) * 1000;
@@ -59,6 +61,9 @@
             ? result[THEME_KEY]
             : "auto";
           enabled = result[ENABLED_KEY] !== false;
+          const savedSort = result[SORT_KEY] || {};
+          if (savedSort.dir === "asc" || savedSort.dir === "desc") sortDir = savedSort.dir;
+          if (savedSort.field === "saved" || savedSort.field === "posted") sortField = savedSort.field;
           resolve();
         }
       );
@@ -247,10 +252,21 @@
     return html;
   }
 
-  function getItemTime(item) {
-    const raw = item.createdAt || item.bookmarkedAt || null;
+  // Sort/filter clock. "posted" = tweet date, "saved" = when the extension
+  // first saw the bookmark (X exposes no true saved-at timestamp, so bulk
+  // loads cluster around their load sessions).
+  function timeFor(item) {
+    const raw = sortField === "saved"
+      ? item.bookmarkedAt || item.createdAt || null
+      : item.createdAt || item.bookmarkedAt || null;
     const t = raw ? new Date(raw).getTime() : NaN;
     return Number.isNaN(t) ? null : t;
+  }
+
+  function saveSortPref() {
+    try {
+      chrome.storage.sync.set({ [SORT_KEY]: { field: sortField, dir: sortDir } }, () => {});
+    } catch (_) {}
   }
 
   function getViewBounds() {
@@ -275,7 +291,7 @@
 
     if (from || to) {
       list = list.filter((b) => {
-        const t = getItemTime(b);
+        const t = timeFor(b);
         if (t === null) return !from && !to;
         if (from && t < from) return false;
         if (to && t > to) return false;
@@ -295,8 +311,8 @@
 
     const dir = sortDir === "asc" ? 1 : -1;
     return list.sort((a, b) => {
-      const ta = getItemTime(a) ?? 0;
-      const tb = getItemTime(b) ?? 0;
+      const ta = timeFor(a) ?? 0;
+      const tb = timeFor(b) ?? 0;
       return (ta - tb) * dir;
     });
   }
@@ -304,9 +320,11 @@
   function groupByMonth(items) {
     const groups = new Map();
     for (const item of items) {
-      const key = item.createdAt
-        ? formatMonthHeader(item.createdAt)
-        : "Undated";
+      const saved = sortField === "saved";
+      const raw = saved
+        ? item.bookmarkedAt || item.createdAt || null
+        : item.createdAt || null;
+      const key = raw ? formatMonthHeader(raw) : "Undated";
       if (!groups.has(key)) groups.set(key, []);
       groups.get(key).push(item);
     }
@@ -505,6 +523,16 @@
     }
   }
 
+  function updateSortFieldButton() {
+    const btn = document.getElementById("xbm-sort-field");
+    if (!btn) return;
+    const saved = sortField === "saved";
+    btn.innerHTML = `${saved ? ICON_BOOKMARK : ICON_CALENDAR}<span>${saved ? "Saved" : "Posted"}</span>`;
+    const label = `Sort by: ${saved ? "date saved" : "tweet date"}`;
+    btn.setAttribute("aria-label", label);
+    btn.title = label;
+  }
+
   function updateSortButton() {
     const btn = document.getElementById("xbm-sort");
     if (!btn) return;
@@ -625,6 +653,9 @@
               <input type="date" id="xbm-filter-to" aria-label="Filter end date" />
             </div>
             <span class="xbm-filter-count" id="xbm-filter-count"></span>
+            <button type="button" class="xbm-sort-btn" id="xbm-sort-field" aria-label="Sort by: tweet date">
+              ${ICON_CALENDAR}<span>Posted</span>
+            </button>
             <button type="button" class="xbm-sort-btn" id="xbm-sort" aria-label="Sort order: newest first">
               ${ICON_ARROW_DOWN}<span>Newest</span>
             </button>
@@ -854,12 +885,22 @@
       visibleLimit = PAGE_SIZE;
       updateMainContent();
     });
+    document.getElementById("xbm-sort-field")?.addEventListener("click", () => {
+      sortField = sortField === "saved" ? "posted" : "saved";
+      saveSortPref();
+      updateSortFieldButton();
+      visibleLimit = PAGE_SIZE;
+      updateMainContent();
+    });
     document.getElementById("xbm-sort")?.addEventListener("click", () => {
       sortDir = sortDir === "asc" ? "desc" : "asc";
+      saveSortPref();
       updateSortButton();
       visibleLimit = PAGE_SIZE;
       updateMainContent();
     });
+    updateSortFieldButton();
+    updateSortButton();
     document.getElementById("xbm-theme-btn")?.addEventListener("click", () => {
       setTheme(getEffectiveTheme() === "dark" ? "light" : "dark");
     });
