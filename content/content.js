@@ -140,7 +140,23 @@
         return;
       }
     } catch (_) {}
-    window.open(chrome.runtime.getURL("options/options.html"), "_blank", "noopener");
+    let url = null;
+    try {
+      url = chrome.runtime.getURL("options/options.html");
+    } catch (_) {}
+    if (!url) {
+      showToast("Could not open settings");
+      return;
+    }
+    // Anchor click inside the gesture handler keeps user activation;
+    // window.open from a content script gets silently popup-blocked.
+    const a = document.createElement("a");
+    a.href = url;
+    a.target = "_blank";
+    a.rel = "noopener";
+    (document.body || document.documentElement).appendChild(a);
+    a.click();
+    a.remove();
   }
 
   function injectScript() {
