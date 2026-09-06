@@ -6,6 +6,7 @@
   const THEME_KEY = "xbmTheme";
   const ENABLED_KEY = "xbmEnabled";
   const SORT_KEY = "xbmSort";
+  const SEQ_KEY = "xbmSeqCounter";
   const DEFAULT_DELAY_SECONDS = 3;
   const MIN_DELAY_SECONDS = 1;
   const MAX_DELAY_SECONDS = 60;
@@ -23,6 +24,11 @@
   let viewTo = "";
   let sortDir = "desc";
   let sortField = "posted";
+  let savedSeqCounter = 1;
+  let runSeenIds = null;
+  let runSeenSet = null;
+  let lastColCount = 0;
+  let resizeBound = false;
   const PAGE_SIZE = 100;
   let visibleLimit = PAGE_SIZE;
   let uiRoot = null;
@@ -181,6 +187,52 @@
     }
   }
 
+  function loadSeqCounter() {
+    return new Promise((resolve) => {
+      try {
+        chrome.storage.local.get(SEQ_KEY, (result) => {
+          const n = parseInt(result?.[SEQ_KEY], 10);
+          if (Number.isFinite(n) && n > 0) savedSeqCounter = n;
+          resolve();
+        });
+      } catch (_) {
+        resolve();
+      }
+    });
+  }
+
+  function persistSeqCounter() {
+    try {
+      chrome.storage.local.set({ [SEQ_KEY]: savedSeqCounter }, () => {});
+    } catch (_) {}
+  }
+
+  // One-time backfill for archives saved before sequencing existed.
+  // Earliest-seen = newest saves, so they take the highest seqs.
+  function backfillSavedSeq() {
+    let max = 0;
+    const missing = [];
+    for (const item of bookmarks.values()) {
+      const s = parseInt(item?.savedSeq, 10);
+      if (Number.isFinite(s) && s > 0) {
+        if (s > max) max = s;
+      } else if (item?.id) {
+        missing.push(item);
+      }
+    }
+    if (missing.length) {
+      const bySeen = [...missing].sort((a, b) =>
+        String(a.bookmarkedAt || "") < String(b.bookmarkedAt || "") ? -1 : 1);
+      bySeen.forEach((item, i) => {
+        item.savedSeq = max + missing.length - i;
+      });
+      max += missing.length;
+      scheduleArchiveSave();
+    }
+    if (max >= savedSeqCounter) savedSeqCounter = max + 1;
+    persistSeqCounter();
+  }
+
   function scheduleArchiveSave() {
     clearTimeout(archiveSaveTimer);
     archiveSaveTimer = setTimeout(async () => {
@@ -188,6 +240,7 @@
       lastArchiveSaveAt = Date.now();
       try {
         await XBookmarksArchive.save(Array.from(bookmarks.values()));
+        persistSeqCounter();
       } catch (error) {
         if (String(error?.message).includes("Extension context invalidated")) return;
         console.error("X Bookmarks archive save failed", error);
@@ -198,6 +251,17 @@
 
   function mergeBookmarks(tweets) {
     const previousCount = bookmarks.size;
+    for (const t of tweets || []) {
+      const id = t?.id != null ? String(t.id) : null;
+      if (!id) continue;
+      if (!bookmarks.has(id)) {
+        t.savedSeq = savedSeqCounter++;
+      }
+      if (runSeenSet && !runSeenSet.has(id)) {
+        runSeenSet.add(id);
+        runSeenIds.push(id);
+      }
+    }
     const merged = XBookmarksArchive.merge(
       Array.from(bookmarks.values()),
       tweets
@@ -269,6 +333,16 @@
     } catch (_) {}
   }
 
+  // Sort key. "saved" uses timeline-position sequencing (higher = saved
+  // more recently); "posted" uses tweet timestamps.
+  function sortKeyFor(item) {
+    if (sortField === "saved") {
+      const s = parseInt(item?.savedSeq, 10);
+      return Number.isFinite(s) ? s : -1;
+    }
+    return timeFor(item) ?? 0;
+  }
+
   function getViewBounds() {
     const now = Date.now();
     if (viewRange === "7" || viewRange === "30") {
@@ -310,11 +384,7 @@
     }
 
     const dir = sortDir === "asc" ? 1 : -1;
-    return list.sort((a, b) => {
-      const ta = timeFor(a) ?? 0;
-      const tb = timeFor(b) ?? 0;
-      return (ta - tb) * dir;
-    });
+    return list.sort((a, b) => (sortKeyFor(a) - sortKeyFor(b)) * dir);
   }
 
   function groupByMonth(items) {
@@ -408,6 +478,21 @@
       </article>`;
   }
 
+  function colCount() {
+    const w = window.innerWidth || 1400;
+    return w >= 1200 ? 4 : w >= 900 ? 3 : w >= 600 ? 2 : 1;
+  }
+
+  // Round-robin into columns so the grid reads left-to-right, top-to-bottom.
+  // (CSS column-count flows down each column first, which scrambles order.)
+  function distributeCards(tweets) {
+    const cols = Array.from({ length: colCount() }, () => []);
+    tweets.forEach((t, i) => cols[i % cols.length].push(t));
+    return cols
+      .map((c) => `<div class="xbm-col">${c.map(renderCard).join("")}</div>`)
+      .join("");
+  }
+
   function renderBookmarksGrid(items) {
     if (!items.length) {
       const hint = isHistoryPage()
@@ -425,7 +510,7 @@
     for (const [month, tweets] of groups) {
       html += `<h2 class="xbm-month-header">${escapeHtml(month)}</h2>`;
       html += '<div class="xbm-columns">';
-      html += tweets.map(renderCard).join("");
+      html += distributeCards(tweets);
       html += "</div>";
     }
 
@@ -450,7 +535,7 @@
               <div class="xbm-handle">@${escapeHtml(group.author.screenName)} · ${group.tweets.length} bookmarks</div>
             </div>
           </div>
-          <div class="xbm-columns">${group.tweets.map(renderCard).join("")}</div>
+          <div class="xbm-columns">${distributeCards(group.tweets)}</div>
         </section>`;
     }
     html += "</div>";
@@ -742,6 +827,7 @@
   }
 
   function updateMainContent() {
+    lastColCount = colCount();
     const main = document.getElementById("xbm-main");
     if (main) {
       main.innerHTML = renderMainContent();
@@ -901,6 +987,18 @@
     });
     updateSortFieldButton();
     updateSortButton();
+    lastColCount = colCount();
+    if (!resizeBound) {
+      resizeBound = true;
+      let resizeTimer = null;
+      window.addEventListener("resize", () => {
+        clearTimeout(resizeTimer);
+        resizeTimer = setTimeout(() => {
+          if (!uiRoot) return;
+          if (colCount() !== lastColCount) updateMainContent();
+        }, 200);
+      });
+    }
     document.getElementById("xbm-theme-btn")?.addEventListener("click", () => {
       setTheme(getEffectiveTheme() === "dark" ? "light" : "dark");
     });
@@ -1106,14 +1204,29 @@
     loadAllActive = true;
     isLoading = true;
     fetchRetryCount = 0;
+    runSeenIds = [];
+    runSeenSet = new Set();
     updateLoadingUI();
     showToast(`Loading one page every ${getDelaySeconds()} seconds`);
     scheduleAutoFetch();
   }
 
-  function finishLoadingAll() {
+  function finishLoadingAll(complete = true) {
     const wasLoading = loadAllActive;
     stopLoadAll();
+    if (complete && runSeenIds && runSeenIds.length) {
+      // Full crawl ran newest-first: rewrite seqs in run order so Saved
+      // sort matches X's current timeline exactly.
+      const base = savedSeqCounter + runSeenIds.length;
+      runSeenIds.forEach((id, i) => {
+        const item = bookmarks.get(String(id));
+        if (item) item.savedSeq = base - i;
+      });
+      savedSeqCounter = base + 1;
+      persistSeqCounter();
+    }
+    runSeenIds = null;
+    runSeenSet = null;
     updateMainContent();
     scheduleArchiveSave();
 
@@ -1197,8 +1310,10 @@
   async function init() {
     injectScript();
     await loadSettings();
+    await loadSeqCounter();
     try {
       replaceBookmarks(await XBookmarksArchive.load());
+      backfillSavedSeq();
     } catch (error) {
       console.error("X Bookmarks archive load failed", error);
     }
@@ -1238,7 +1353,7 @@
               retryFetchPage();
             }, waitSecs * 1000);
           } else {
-            finishLoadingAll();
+            finishLoadingAll(false);
             showToast("Loading stopped - partial list kept");
           }
         } else {

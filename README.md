@@ -36,6 +36,8 @@ The original project is a focused bookmarks viewer. This fork keeps that scope a
 - Bulk-load hardening: grid renders first 100 only with Show more, per-page renders gated during Load All, event delegation, archive saves throttled
 - IndexedDB archive storage (auto-migrates the old `chrome.storage.local` archive, survives 10k+ archives past the ~10MB storage cap)
 - Backoff retry on rate-limited page fetches (30s/60s/120s/180s/180s, then stops)
+- Save-order sequencing: Saved sort follows X timeline position (rebuilt on every full load), not clustered first-seen timestamps
+- Left-to-right masonry grid (round-robin columns) so chronological order reads correctly
 - Extension logo links to `x.com/home`; Helium `openOptionsPage` crash fixed
 
 No data leaves the browser.

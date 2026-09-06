@@ -452,27 +452,24 @@ body.xbm-active [data-testid="primaryColumn"] {
 }
 
 .xbm-columns {
-  column-count: 4;
-  column-gap: 16px;
+  display: flex;
+  gap: 16px;
+  align-items: flex-start;
 }
 
-@media (max-width: 1200px) {
-  .xbm-columns {
-    column-count: 3;
-  }
+.xbm-col {
+  flex: 1 1 0;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
 }
 
-@media (max-width: 900px) {
-  .xbm-columns {
-    column-count: 2;
-  }
+.xbm-col .xbm-card {
+  margin-bottom: 0;
 }
 
 @media (max-width: 600px) {
-  .xbm-columns {
-    column-count: 1;
-  }
-
   .xbm-header {
     padding: 10px 12px;
   }
@@ -503,7 +500,6 @@ body.xbm-active [data-testid="primaryColumn"] {
 
 /* Cards */
 .xbm-card {
-  break-inside: avoid;
   margin-bottom: 16px;
   background: #fff;
   border-radius: 16px;
