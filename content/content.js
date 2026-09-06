@@ -410,8 +410,10 @@
       }
       groups.get(key).tweets.push(item);
     }
-    return Array.from(groups.values()).sort((a, b) =>
-      a.author.name.localeCompare(b.author.name, "en")
+    return Array.from(groups.values()).sort(
+      (a, b) =>
+        b.tweets.length - a.tweets.length ||
+        a.author.name.localeCompare(b.author.name, "en")
     );
   }
 
